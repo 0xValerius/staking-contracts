@@ -59,4 +59,16 @@ contract SynthetixStakingTest is Test {
         assertEq(address(staking.rewardToken()), address(rewardToken));
         assertEq(staking.owner(), address(owner));
     }
+
+    function test_SynthetixSetStaking() public {
+        vm.startPrank(owner);
+        staking.setRewardsDuration(duration);
+        assertEq(staking.rewardsDuration(), duration);
+
+        rewardToken.transfer(address(staking), initialRewardAmount);
+        assertEq(rewardToken.balanceOf(address(staking)), initialRewardAmount);
+
+        staking.notifyRewardAmount(initialRewardAmount);
+        assertEq(staking.rewardRate(), initialRewardAmount / duration);
+    }
 }
