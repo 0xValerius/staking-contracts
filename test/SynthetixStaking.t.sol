@@ -77,10 +77,68 @@ contract SynthetixStakingTest is Test {
     }
 
     function test_Simulation1() public {
+        /// Simulation: user1 stakes 100 tokens before owner initialize the contract and load rewards. The owner initialize the staking contract after 10 seconds. The user waits for 20 seconds and then claims rewards.
+
+        // stake
+        vm.startPrank(actor1);
+        stakingToken.approve(address(staking), 100);
+        staking.stake(100);
+
+        // evaluate
+        assertEq(stakingToken.balanceOf(actor1), initialStakingBalance - 100);
+        assertEq(staking.totalSupply(), 100);
+        assertEq(staking.balances(actor1), 100);
+        assertEq(staking.earned(actor1), 0);
+        assertEq(staking.rewardRate(), 0);
+        vm.stopPrank();
+
+        // wait for 10 seconds
+        vm.warp(11);
+
+        // initialize staking contract
+        vm.startPrank(owner);
+        staking.setRewardsDuration(duration);
+        assertEq(staking.rewardsDuration(), duration);
+        rewardToken.transfer(address(staking), initialRewardAmount);
+        assertEq(rewardToken.balanceOf(address(staking)), initialRewardAmount);
+        staking.notifyRewardAmount(initialRewardAmount);
+        vm.stopPrank();
+        assertEq(staking.rewardRate(), initialRewardAmount / duration);
+        assertEq(staking.lastUpdateTime(), block.timestamp); // 11
+        assertEq(staking.rewardPerTokenStored(), 0); // 0 because even tho the user has staked, but the owner didn't have initialized the contract yet (rewardRate() was 0)
+        assertEq(staking.endAt(), block.timestamp + duration);
+
+        // forward 20 seconds
+        vm.warp(31);
+
+        // evaluate
+        assertEq(staking.earned(actor1), 20 * staking.rewardRate());
+        vm.prank(actor1);
+        staking.exit();
+        assertEq(stakingToken.balanceOf(actor1), initialStakingBalance);
+        assertEq(rewardToken.balanceOf(actor1), 20 * staking.rewardRate());
+        assertEq(staking.totalSupply(), 0);
+        assertEq(staking.balances(actor1), 0);
+        assertEq(staking.earned(actor1), 0);
+        assertEq(staking.userRewardPerTokenPaid(actor1), 20 * staking.rewardRate() * 1e18 / 100);
+    }
+
+    function test_Simulation2() public {
         /// Simulation: user1 stakes 100 tokens for 100 seconds starting from the beginning. Then user1 claims rewards.
 
-        // initialize staking contract parameter
-        test_SynthetixSetStaking();
+        // initialize staking contract
+        vm.startPrank(owner);
+        staking.setRewardsDuration(duration);
+        assertEq(staking.rewardsDuration(), duration);
+        rewardToken.transfer(address(staking), initialRewardAmount);
+        assertEq(rewardToken.balanceOf(address(staking)), initialRewardAmount);
+        staking.notifyRewardAmount(initialRewardAmount);
+        vm.stopPrank();
+        assertEq(staking.totalSupply(), 0);
+        assertEq(staking.rewardRate(), initialRewardAmount / duration);
+        assertEq(staking.lastUpdateTime(), block.timestamp); // 1
+        assertEq(staking.rewardPerTokenStored(), 0); // 0 because no one has staked yet | total supply is 0
+        assertEq(staking.endAt(), block.timestamp + duration);
 
         // stake
         vm.startPrank(actor1);
