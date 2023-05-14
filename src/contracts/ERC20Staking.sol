@@ -7,7 +7,6 @@ import {Ownable} from "openzeppelin/access/Ownable.sol";
 
 contract ERC20Staking is Ownable {
     /* ========== STATE VARIABLES ========== */
-
     IERC20 public immutable stakingToken;
     IERC20 public immutable rewardToken;
 
@@ -22,4 +21,10 @@ contract ERC20Staking is Ownable {
 
     uint256 public totalSupply;
     mapping(address => uint256) public balances;
+
+    /* ========== CONSTRUCTOR ========== */
+    constructor(address _stakingToken, address _rewardToken) {
+        stakingToken = IERC20(_stakingToken);
+        rewardToken = IERC20(_rewardToken);
+    }
 }
