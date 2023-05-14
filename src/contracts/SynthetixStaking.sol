@@ -7,7 +7,6 @@ import {Ownable} from "openzeppelin/access/Ownable.sol";
 
 contract SynthetixStaking is Ownable {
     /* ========== STATE VARIABLES ========== */
-
     IERC20 public immutable stakingToken;
     IERC20 public immutable rewardToken;
 
@@ -24,14 +23,12 @@ contract SynthetixStaking is Ownable {
     mapping(address => uint256) public balances;
 
     /* ========== CONSTRUCTOR ========== */
-
     constructor(address _stakingToken, address _rewardToken) {
         stakingToken = IERC20(_stakingToken);
         rewardToken = IERC20(_rewardToken);
     }
 
     /* ========== VIEWS ========== */
-
     /// @notice Returns the last time rewards were applicable.
     function lastTimeRewardApplicable() public view returns (uint256) {
         return block.timestamp < endAt ? block.timestamp : endAt;
@@ -51,7 +48,6 @@ contract SynthetixStaking is Ownable {
     }
 
     /* ========== MODIFIERS ========== */
-
     /// @notice Updates the reward variables for an account before executing a function.
     modifier updateReward(address account) {
         rewardPerTokenStored = rewardPerToken();
@@ -64,7 +60,6 @@ contract SynthetixStaking is Ownable {
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-
     /// @notice Allows an account to stake tokens and earn rewards.
     function stake(uint256 amount) external updateReward(msg.sender) {
         require(amount > 0, "Cannot stake 0");
@@ -100,7 +95,6 @@ contract SynthetixStaking is Ownable {
     }
 
     /* ========== ONLYOWNER FUNCTIONS ========== */
-
     /// @notice Notifies the contract that a reward has been added for the current reward period. *
     /// It updates the reward rate and the last time rewards were applicable based on the amount of the reward and the duration of the reward period. *
     /// This function can only be called by the contract owner.
@@ -142,7 +136,6 @@ contract SynthetixStaking is Ownable {
     }
 
     /* ========== EVENTS ========== */
-
     event RewardAdded(uint256 reward);
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
