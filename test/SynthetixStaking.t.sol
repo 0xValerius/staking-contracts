@@ -209,4 +209,118 @@ contract SynthetixStakingTest is Test {
         assertEq(staking.userRewardPerTokenPaid(actor1), 20 * 3 * 1e18 / 100);
         assertEq(staking.rewardPerTokenStored(), 20 * 3 * 1e18 / 100);
     }
+
+    function test_Simulation4() public {
+        /// Simulation: owner initializes the staking contract and loads rewards. At time 0 the actor1 stakes 100 tokens. After 10 seconds the actor2 stakes 100 tokens. After 10 seconds the user3 stakes 100 tokens. After 10 seconds the user1 claims rewards. After 10 seconds the user2 claims rewards. After 10 seconds the user3 claims rewards.
+
+        // initialize staking contract
+        vm.startPrank(owner);
+        staking.setRewardsDuration(duration);
+        assertEq(staking.rewardsDuration(), duration);
+        rewardToken.transfer(address(staking), initialRewardAmount);
+        assertEq(rewardToken.balanceOf(address(staking)), initialRewardAmount);
+        staking.notifyRewardAmount(initialRewardAmount);
+        vm.stopPrank();
+        assertEq(staking.totalSupply(), 0);
+        assertEq(staking.rewardRate(), initialRewardAmount / duration);
+        assertEq(staking.lastUpdateTime(), block.timestamp); // 1
+        assertEq(staking.rewardPerTokenStored(), 0); // 0 because no one has staked yet | total supply is 0
+        assertEq(staking.endAt(), block.timestamp + duration);
+
+        // user1 stakes
+        vm.startPrank(actor1);
+        stakingToken.approve(address(staking), 100);
+        staking.stake(100);
+        vm.stopPrank();
+
+        // evaluate
+        assertEq(stakingToken.balanceOf(actor1), initialStakingBalance - 100);
+        assertEq(staking.totalSupply(), 100);
+        assertEq(staking.balances(actor1), 100);
+        assertEq(staking.earned(actor1), 0);
+        assertEq(staking.userRewardPerTokenPaid(actor1), 0);
+        assertEq(staking.rewardRate(), initialRewardAmount / duration);
+        assertEq(staking.lastUpdateTime(), 1); // 1
+        assertEq(staking.rewardPerTokenStored(), 0); // 0, actor1 is the first one to stake
+
+        // forward 10 seconds
+        vm.warp(11);
+
+        // user2 stakes
+        vm.startPrank(actor2);
+        stakingToken.approve(address(staking), 100);
+        staking.stake(100);
+        vm.stopPrank();
+
+        // evaluate user2 position
+        assertEq(stakingToken.balanceOf(actor2), initialStakingBalance - 100);
+        assertEq(staking.totalSupply(), 200);
+        assertEq(staking.balances(actor2), 100);
+        assertEq(staking.earned(actor2), 0);
+        assertEq(staking.userRewardPerTokenPaid(actor2), 10 * 3 * 1e18 / 100);
+        assertEq(staking.lastUpdateTime(), 11); // 11
+
+        // evaluate user1 position
+        assertEq(staking.earned(actor1), 30);
+
+        // forward 10 seconds
+        vm.warp(21);
+
+        // user3 stakes
+        vm.startPrank(actor3);
+        stakingToken.approve(address(staking), 100);
+        staking.stake(100);
+        vm.stopPrank();
+
+        // evaluate user3 position
+        assertEq(stakingToken.balanceOf(actor3), initialStakingBalance - 100);
+        assertEq(staking.totalSupply(), 300);
+        assertEq(staking.balances(actor3), 100);
+        assertEq(staking.earned(actor3), 0);
+        assertEq(staking.userRewardPerTokenPaid(actor3), 10 * 3 * 1e18 / 100 + 10 * 3 * 1e18 / 200);
+
+        // evaluate user1 and user2 position
+        assertEq(staking.earned(actor1), 45);
+        assertEq(staking.earned(actor2), 15);
+
+        // forward 10 seconds
+        vm.warp(31);
+
+        // user1 exit
+        vm.prank(actor1);
+        staking.exit();
+
+        // evaluate user1 position
+        assertEq(stakingToken.balanceOf(actor1), initialStakingBalance);
+        assertEq(rewardToken.balanceOf(actor1), 55);
+
+        // evaluate user2 and user3 position
+        assertEq(staking.earned(actor2), 25);
+        assertEq(staking.earned(actor3), 10);
+
+        // forward 10 seconds
+        vm.warp(41);
+
+        // user2 exit
+        vm.prank(actor2);
+        staking.exit();
+
+        // evaluate user2 position
+        assertEq(stakingToken.balanceOf(actor2), initialStakingBalance);
+        assertEq(rewardToken.balanceOf(actor2), 40);
+
+        // evaluate user3 position
+        assertEq(staking.earned(actor3), 25);
+
+        // forward 10 seconds
+        vm.warp(51);
+
+        // user3 exit
+        vm.prank(actor3);
+        staking.exit();
+
+        // evaluate user3 position
+        assertEq(stakingToken.balanceOf(actor3), initialStakingBalance);
+        assertEq(rewardToken.balanceOf(actor3), 55);
+    }
 }
