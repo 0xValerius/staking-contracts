@@ -94,7 +94,7 @@ contract SynthetixStaking is Ownable {
         getReward();
     }
 
-    /* ========== ONLYOWNER FUNCTIONS ========== */
+    /* ========== ADMIN FUNCTIONS ========== */
     /// @notice Notifies the contract that a reward has been added for the current reward period. *
     /// It updates the reward rate and the last time rewards were applicable based on the amount of the reward and the duration of the reward period. *
     /// This function can only be called by the contract owner.
