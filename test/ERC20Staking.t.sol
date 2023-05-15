@@ -36,4 +36,19 @@ contract ERC20StakingTest is Test {
         // Mint reward tokens to owner
         deal(address(rewardToken), owner, initialRewardAmount, true);
     }
+
+    function test_MockTokenDeployment() public {
+        assertEq(stakingToken.name(), "Staking Token");
+        assertEq(stakingToken.symbol(), "ST");
+        assertEq(stakingToken.balanceOf(owner), 0);
+        assertEq(stakingToken.balanceOf(actor1), initialStakingBalance);
+        assertEq(stakingToken.balanceOf(actor2), initialStakingBalance);
+        assertEq(stakingToken.balanceOf(actor3), initialStakingBalance);
+        assertEq(stakingToken.totalSupply(), initialStakingBalance * 3);
+
+        assertEq(rewardToken.name(), "Reward Token");
+        assertEq(rewardToken.symbol(), "RT");
+        assertEq(rewardToken.balanceOf(owner), initialRewardAmount);
+        assertEq(rewardToken.totalSupply(), initialRewardAmount);
+    }
 }
