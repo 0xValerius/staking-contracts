@@ -57,7 +57,7 @@ contract SynthetixStakingTest is Test {
     function test_SynthetixDeployment() public {
         assertEq(address(staking.stakingToken()), address(stakingToken));
         assertEq(address(staking.rewardToken()), address(rewardToken));
-        assertEq(staking.owner(), address(owner));
+        assertEq(staking.owner(), owner);
     }
 
     function test_SynthetixSetStaking() public {
