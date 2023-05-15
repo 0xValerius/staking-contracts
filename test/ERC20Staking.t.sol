@@ -51,4 +51,10 @@ contract ERC20StakingTest is Test {
         assertEq(rewardToken.balanceOf(owner), initialRewardAmount);
         assertEq(rewardToken.totalSupply(), initialRewardAmount);
     }
+
+    function test_ERC20StakingDeployment() public {
+        assertEq(address(staking.stakingToken()), address(stakingToken));
+        assertEq(address(staking.rewardToken()), address(rewardToken));
+        assertEq(staking.owner(), owner);
+    }
 }
