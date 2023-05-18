@@ -91,4 +91,9 @@ contract ERC20Staking is Ownable {
         }
         return rewardPerTokenStored + ((lastTimeRewardApplicable() - lastUpdateTime) * rewardRate * 1e18) / totalStaked;
     }
+
+    /// @notice Returns the amount of rewards earned by staking
+    function earned(address account) public view returns (uint256) {
+        return (balances[account] * (rewardPerToken() - userRewardPerTokenPaid[account])) / 1e18 + rewards[account];
+    }
 }
