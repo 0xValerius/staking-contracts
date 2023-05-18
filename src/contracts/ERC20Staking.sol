@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {Ownable} from "openzeppelin/access/Ownable.sol";
+import {Math} from "openzeppelin/utils/math/Math.sol";
 
 contract ERC20Staking is Ownable {
     /* ========== STATE VARIABLES ========== */
@@ -73,5 +74,13 @@ contract ERC20Staking is Ownable {
         );
         IERC20(tokenAddress).transfer(msg.sender, tokenAmount);
         //emit Recovered(tokenAddress, tokenAmount);
+    }
+
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
+    /* ========== VIEW FUNCTIONS ========== */
+    /// @notice Returns the last time rewards were applicable
+    function lastTimeRewardApplicable() public view returns (uint256) {
+        return block.timestamp < endAt ? Math.max(startAt, block.timestamp) : endAt;
     }
 }
