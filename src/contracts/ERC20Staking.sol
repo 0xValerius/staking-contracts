@@ -83,4 +83,12 @@ contract ERC20Staking is Ownable {
     function lastTimeRewardApplicable() public view returns (uint256) {
         return block.timestamp < endAt ? Math.max(startAt, block.timestamp) : endAt;
     }
+
+    /// @notice Returns the reward per token earned by staking until the last time rewards were applicable
+    function rewardPerToken() public view returns (uint256) {
+        if (totalStaked == 0) {
+            return rewardPerTokenStored;
+        }
+        return rewardPerTokenStored + ((lastTimeRewardApplicable() - lastUpdateTime) * rewardRate * 1e18) / totalStaked;
+    }
 }
