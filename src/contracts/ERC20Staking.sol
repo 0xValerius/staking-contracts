@@ -112,6 +112,19 @@ contract ERC20Staking is Ownable {
         // emit Withdrawn(msg.sender, amount);
     }
 
+    /// @notice Allows an account to claim their rewards without unstaking.
+    function claimReward() public updateReward(msg.sender) {
+        uint256 reward = rewards[msg.sender];
+        if (reward > 0) {
+            rewards[msg.sender] = 0;
+            owedRewards -= reward;
+            rewardToken.transfer(msg.sender, reward);
+            // emit RewardPaid(msg.sender, reward);
+        }
+    }
+
+    
+
     /* ========== VIEW FUNCTIONS ========== */
     /// @notice Returns the last time rewards were applicable
     function lastTimeRewardApplicable() public view returns (uint256) {
