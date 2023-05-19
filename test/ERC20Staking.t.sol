@@ -87,7 +87,19 @@ contract ERC20StakingTest is Test {
         staking.setEndAt(startAt);
 
         staking.setEndAt(endAt);
+        vm.stopPrank();
         assertEq(staking.endAt(), endAt);
         assertEq(staking.rewardRate(), 0);
+    }
+
+    function test_lastTimeRewardApplicable() public {
+        vm.startPrank(owner);
+        staking.setStartAt(startAt);
+        staking.setEndAt(endAt);
+        assertEq(staking.lastTimeRewardApplicable(), startAt);
+        vm.warp(startAt + 10);
+        assertEq(staking.lastTimeRewardApplicable(), startAt + 10);
+        vm.warp(endAt + 10);
+        assertEq(staking.lastTimeRewardApplicable(), endAt);
     }
 }
