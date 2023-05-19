@@ -20,9 +20,10 @@ contract ERC20StakingTest is Test {
     address actor3 = makeAddr("actor3");
 
     uint256 initialStakingBalance = 1000;
-    uint256 initialRewardAmount = 1000;
+    uint256 initialRewardAmount = 2400;
     uint256 startAt = 100;
     uint256 endAt = 500;
+    uint256 initialReward = 1200;
 
     function setUp() public {
         // deploy staking contract
@@ -101,5 +102,25 @@ contract ERC20StakingTest is Test {
         assertEq(staking.lastTimeRewardApplicable(), startAt + 10);
         vm.warp(endAt + 10);
         assertEq(staking.lastTimeRewardApplicable(), endAt);
+    }
+
+    function test_updateRewardAllocation() public {
+        vm.startPrank(owner);
+        vm.expectRevert("Cannot update reward allocation after endAt");
+        staking.updateRewardAllocation(10);
+        staking.setEndAt(endAt);
+        vm.expectRevert("Cannot update reward allocation before startAt");
+        staking.updateRewardAllocation(10);
+        staking.setStartAt(startAt);
+        vm.expectRevert("Cannot update reward allocation to more than the balance of the contract");
+        staking.updateRewardAllocation(10);
+
+        // transfer reward to distribute
+        rewardToken.transfer(address(staking), initialReward);
+        staking.updateRewardAllocation(initialReward);
+        assertEq(staking.rewardRate(), initialReward / (endAt - startAt));
+        assertEq(staking.lastUpdateTime(), startAt);
+        assertEq(staking.rewardPerTokenStored(), 0);
+        assertEq(staking.toDistributeRewards(), initialReward);
     }
 }
