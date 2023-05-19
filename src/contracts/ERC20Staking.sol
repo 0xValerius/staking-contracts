@@ -13,7 +13,6 @@ contract ERC20Staking is Ownable {
 
     uint256 public startAt;
     uint256 public endAt;
-    uint256 public duration;
     uint256 public rewardRate;
     uint256 public rewardPerTokenStored;
     uint256 public lastUpdateTime;
@@ -42,13 +41,12 @@ contract ERC20Staking is Ownable {
         startAt = _startAt;
     }
 
-    /// @notice Set ending timestamp of the staking period. Update duration.
+    /// @notice Set ending timestamp of the staking period.
     function setEndAt(uint256 _endAt) external onlyOwner updateReward(address(0)) {
         require(endAt >= block.timestamp, "Cannot set endAt in the past");
         require(_endAt > startAt, "Cannot set endAt before startAt");
         endAt = _endAt;
-        duration = endAt - startAt;
-        rewardRate = toDistributeRewards / (endAt - block.timestamp);
+        rewardRate = toDistributeRewards / (endAt - lastTimeRewardApplicable());
     }
 
     /// @notice Update reward allocation.
@@ -63,7 +61,7 @@ contract ERC20Staking is Ownable {
         );
 
         toDistributeRewards += reward;
-        rewardRate = toDistributeRewards / (endAt - block.timestamp);
+        rewardRate = toDistributeRewards / (endAt - lastTimeRewardApplicable());
     }
 
     /// @notice Allows the contract owner to recover any ERC20 token sent to the contract in error except for the staking and reward tokens.
