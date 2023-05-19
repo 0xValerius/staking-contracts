@@ -103,6 +103,14 @@ contract ERC20Staking is Ownable {
         // emit Staked(msg.sender, amount);
     }
 
+    /// @notice Withdraw ERC20 tokens.
+    function withdraw(uint256 amount) public updateReward(msg.sender) {
+        require(amount > 0, "Cannot withdraw 0");
+        totalStaked -= amount;
+        balances[msg.sender] -= amount;
+        stakingToken.transfer(msg.sender, amount);
+        // emit Withdrawn(msg.sender, amount);
+    }
 
     /* ========== VIEW FUNCTIONS ========== */
     /// @notice Returns the last time rewards were applicable
