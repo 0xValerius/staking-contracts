@@ -48,7 +48,7 @@ contract ERC20Staking is Ownable {
         require(_endAt > startAt, "Cannot set endAt before startAt");
         endAt = _endAt;
         duration = endAt - startAt;
-        rewardRate = toDistributeRewards / duration;
+        rewardRate = toDistributeRewards / (endAt - block.timestamp);
     }
 
     /// @notice Update reward allocation.
@@ -63,7 +63,7 @@ contract ERC20Staking is Ownable {
         );
 
         toDistributeRewards += reward;
-        rewardRate = toDistributeRewards / duration;
+        rewardRate = toDistributeRewards / (endAt - block.timestamp);
     }
 
     /// @notice Allows the contract owner to recover any ERC20 token sent to the contract in error except for the staking and reward tokens.
@@ -94,6 +94,15 @@ contract ERC20Staking is Ownable {
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
+    /// @notice Stake ERC20 tokens to earn rewards.
+    function stake(uint256 amount) external updateReward(msg.sender) {
+        require(amount > 0, "Cannot stake 0");
+        totalStaked += amount;
+        balances[msg.sender] += amount;
+        stakingToken.transferFrom(msg.sender, address(this), amount);
+        // emit Staked(msg.sender, amount);
+    }
+
 
     /* ========== VIEW FUNCTIONS ========== */
     /// @notice Returns the last time rewards were applicable
