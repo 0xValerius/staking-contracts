@@ -43,15 +43,16 @@ contract ERC20Staking is Ownable {
     }
 
     /// @notice Set ending timestamp of the staking period. Update duration.
-    function setEndAt(uint256 _endAt) external onlyOwner {
+    function setEndAt(uint256 _endAt) external onlyOwner updateReward(address(0)) {
         require(endAt >= block.timestamp, "Cannot set endAt in the past");
         require(_endAt > startAt, "Cannot set endAt before startAt");
         endAt = _endAt;
         duration = endAt - startAt;
+        rewardRate = toDistributeRewards / duration;
     }
 
     /// @notice Update reward allocation.
-    function updateRewardAllocation(uint256 reward) external onlyOwner {
+    function updateRewardAllocation(uint256 reward) external onlyOwner updateReward(address(0)) {
         require(endAt >= block.timestamp, "Cannot update reward allocation after endAt");
         require(startAt > 0, "Cannot update reward allocation before startAt");
         require(reward > 0, "Cannot update reward allocation to zero");
@@ -74,6 +75,22 @@ contract ERC20Staking is Ownable {
         );
         IERC20(tokenAddress).transfer(msg.sender, tokenAmount);
         //emit Recovered(tokenAddress, tokenAmount);
+    }
+
+    /* ========== MODIFIERS ========== */
+    modifier updateReward(address account) {
+        // updated distributed rewards
+        owedRewards += (lastTimeRewardApplicable() - lastUpdateTime) * rewardRate;
+        toDistributeRewards -= (lastTimeRewardApplicable() - lastUpdateTime) * rewardRate;
+
+        // updated reward per token
+        rewardPerTokenStored = rewardPerToken();
+        lastUpdateTime = lastTimeRewardApplicable();
+        if (account != address(0)) {
+            rewards[account] = earned(account);
+            userRewardPerTokenPaid[account] = rewardPerTokenStored;
+        }
+        _;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
