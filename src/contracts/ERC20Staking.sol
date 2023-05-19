@@ -43,7 +43,7 @@ contract ERC20Staking is Ownable {
 
     /// @notice Set ending timestamp of the staking period.
     function setEndAt(uint256 _endAt) external onlyOwner updateReward(address(0)) {
-        require(endAt >= block.timestamp, "Cannot set endAt in the past");
+        require(_endAt >= block.timestamp, "Cannot set endAt in the past");
         require(_endAt > startAt, "Cannot set endAt before startAt");
         endAt = _endAt;
         rewardRate = toDistributeRewards / (endAt - lastTimeRewardApplicable());

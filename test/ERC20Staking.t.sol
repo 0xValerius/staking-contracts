@@ -22,7 +22,7 @@ contract ERC20StakingTest is Test {
     uint256 initialStakingBalance = 1000;
     uint256 initialRewardAmount = 1000;
     uint256 startAt = 100;
-    //uint256 duration = 100;
+    uint256 endAt = 500;
 
     function setUp() public {
         // deploy staking contract
@@ -69,5 +69,25 @@ contract ERC20StakingTest is Test {
         vm.prank(owner);
         staking.setStartAt(startAt);
         assertEq(staking.startAt(), startAt);
+    }
+
+    function test_setEndAt() public {
+        // non-owner cannot set endAt
+        vm.prank(actor1);
+        vm.expectRevert("Ownable: caller is not the owner");
+        staking.setEndAt(1);
+
+        // Cannot set endAt in the past
+        vm.startPrank(owner);
+        vm.expectRevert("Cannot set endAt in the past");
+        staking.setEndAt(block.timestamp - 1);
+
+        staking.setStartAt(startAt);
+        vm.expectRevert("Cannot set endAt before startAt");
+        staking.setEndAt(startAt);
+
+        staking.setEndAt(endAt);
+        assertEq(staking.endAt(), endAt);
+        assertEq(staking.rewardRate(), 0);
     }
 }
