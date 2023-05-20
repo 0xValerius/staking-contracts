@@ -123,6 +123,15 @@ contract ERC20StakingTest is Test {
         assertEq(staking.lastUpdateTime(), startAt);
         assertEq(staking.rewardPerTokenStored(), 0);
         assertEq(staking.toDistributeRewards(), initialReward);
+
+        // change reward rate modifying endAt
+        staking.setEndAt(endAt + 100);
+        assertEq(staking.rewardRate(), initialReward / (endAt + 100 - startAt));
+
+        // change reward rate adding more rewards
+        rewardToken.transfer(address(staking), initialReward);
+        staking.updateRewardAllocation(initialReward);
+        assertEq(staking.rewardRate(), (initialReward * 2) / (endAt + 100 - startAt));
     }
 
     function test_Simulation1() public {
@@ -190,5 +199,19 @@ contract ERC20StakingTest is Test {
         assertEq(staking.userRewardPerTokenPaid(actor1), (10 * 3 * 1e18) / stakeAmount);
         assertEq(staking.toDistributeRewards(), initialReward - 30);
         assertEq(staking.owedRewards(), 0);
+    }
+
+    function test_Simulation3() public {
+        /// Simulation: owner initializes the staking contract and loads rewards. 10 seconds after startAt, the actor1 stakes 100 tokens. After 20 seconds the user1 claims rewards.
+
+        uint256 stakeAmount = 100;
+
+        // initialize staking contract
+        vm.startPrank(owner);
+        staking.setStartAt(startAt);
+        staking.setEndAt(endAt);
+        rewardToken.transfer(address(staking), initialReward);
+        staking.updateRewardAllocation(initialReward);
+        vm.stopPrank();
     }
 }
