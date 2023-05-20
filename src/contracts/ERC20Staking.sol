@@ -77,9 +77,11 @@ contract ERC20Staking is Ownable {
 
     /* ========== MODIFIERS ========== */
     modifier updateReward(address account) {
-        // updated distributed rewards
-        owedRewards += (lastTimeRewardApplicable() - lastUpdateTime) * rewardRate;
-        toDistributeRewards -= (lastTimeRewardApplicable() - lastUpdateTime) * rewardRate;
+        // update distributed rewards when totalStaked != 0, otherwise no rewards are distributed
+        if (totalStaked != 0) {
+            owedRewards += (lastTimeRewardApplicable() - lastUpdateTime) * rewardRate;
+            toDistributeRewards -= (lastTimeRewardApplicable() - lastUpdateTime) * rewardRate;
+        }
 
         // updated reward per token
         rewardPerTokenStored = rewardPerToken();
