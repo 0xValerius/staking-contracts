@@ -123,8 +123,8 @@ contract ERC20Staking is Ownable {
 
     /// @notice Allows an account to claim their rewards and unstake.
     function exit() external {
-        claimReward();
         withdraw(balances[msg.sender]);
+        claimReward();
     }
 
     /* ========== VIEW FUNCTIONS ========== */
