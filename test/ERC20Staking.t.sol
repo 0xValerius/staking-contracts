@@ -214,8 +214,8 @@ contract ERC20StakingTest is Test {
         staking.updateRewardAllocation(initialReward);
         vm.stopPrank();
 
-        // forward to 10 seconds after startAt
-        vm.warp(startAt + 10);
+        // forward to 200 seconds after startAt
+        vm.warp(startAt + 200);
 
         // stake
         vm.startPrank(actor1);
@@ -229,15 +229,15 @@ contract ERC20StakingTest is Test {
         assertEq(staking.earned(actor1), 0);
         assertEq(staking.rewardRate(), 30);
         assertEq(staking.rewardPerToken(), 0);
-        assertEq(staking.lastUpdateTime(), startAt + 10);
+        assertEq(staking.lastUpdateTime(), startAt + 200);
 
-        // forward to 20 seconds after startAt
-        vm.warp(startAt + 20);
+        // forward to 210 seconds after startAt
+        vm.warp(startAt + 210);
 
         // evaluate
         assertEq(staking.earned(actor1), 300);
         assertEq(staking.rewardPerToken(), (10 * 30 * 1e18) / stakeAmount);
-        assertEq(staking.lastUpdateTime(), startAt + 10);
+        assertEq(staking.lastUpdateTime(), startAt + 200);
         assertEq(staking.rewardPerTokenStored(), 0);
         assertEq(staking.userRewardPerTokenPaid(actor1), 0);
         assertEq(staking.toDistributeRewards(), initialReward);
@@ -254,7 +254,7 @@ contract ERC20StakingTest is Test {
         assertEq(staking.balances(actor1), 0);
         assertEq(staking.earned(actor1), 0);
         assertEq(staking.rewardPerToken(), (10 * 30 * 1e18) / stakeAmount);
-        assertEq(staking.lastUpdateTime(), startAt + 20);
+        assertEq(staking.lastUpdateTime(), startAt + 210);
         assertEq(staking.userRewardPerTokenPaid(actor1), (10 * 30 * 1e18) / stakeAmount);
         assertEq(staking.toDistributeRewards(), initialReward - 300);
         assertEq(staking.owedRewards(), 0);
@@ -262,9 +262,14 @@ contract ERC20StakingTest is Test {
         /// reward are not distributed during the first 10 seconds. They can be either claimed by the owner or reintroduced in the staking contract. To maintain the same reward rate the owner should reintroduce the rewards in the staking contract and increase endAt. Reintroducing the rewards without increasing endAt will increase the reward rate. The latter scenario can be achieved by calling updateRewardAllocation(0). This will update the reward rate so that the pre-fixed staking reward are distributed by the end of the staking period.
 
         // reintroduce rewards
-        //console.log("LeftOver", staking.toDistributeRewards() - (endAt - block.timestamp) * previousRewardRate);
+        uint256 previousRewardRate = staking.rewardRate();
+        console.log("LeftOver", staking.toDistributeRewards() - (endAt - block.timestamp) * previousRewardRate);
+        console.log("previousRewardRate", previousRewardRate);
+
         vm.startPrank(owner);
         staking.updateRewardAllocation(0);
-        //assertGt(staking.rewardRate(), previousRewardRate);
+        vm.stopPrank();
+        console.log("newRewardRate", staking.rewardRate());
+        assertGt(staking.rewardRate(), previousRewardRate);
     }
 }
