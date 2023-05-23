@@ -51,7 +51,8 @@ contract ERC20Staking is Ownable {
 
     /// @notice Update reward allocation.
     function updateRewardAllocation(uint256 reward) external onlyOwner updateReward(address(0)) {
-        require(endAt >= block.timestamp, "Cannot update reward allocation after endAt");
+        uint256 _endAt = endAt;
+        require(_endAt >= block.timestamp, "Cannot update reward allocation after endAt");
         require(startAt > 0, "Cannot update reward allocation before startAt");
 
         require(
@@ -60,7 +61,7 @@ contract ERC20Staking is Ownable {
         );
 
         toDistributeRewards += reward;
-        rewardRate = toDistributeRewards / (endAt - lastTimeRewardApplicable());
+        rewardRate = toDistributeRewards / (_endAt - lastTimeRewardApplicable());
     }
 
     /// @notice Allows the contract owner to recover any ERC20 token sent to the contract in error except for the staking and reward tokens.
