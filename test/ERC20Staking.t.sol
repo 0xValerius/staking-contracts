@@ -105,20 +105,20 @@ contract ERC20StakingTest is Test {
         assertEq(staking.lastTimeRewardApplicable(), endAt);
     }
 
-    function test_updateRewardAllocation() public {
+    function test_increaseRewardAllocation() public {
         vm.startPrank(owner);
         vm.expectRevert("Cannot update reward allocation after endAt");
-        staking.updateRewardAllocation(10);
+        staking.increaseRewardAllocation(10);
         staking.setEndAt(endAt);
         vm.expectRevert("Cannot update reward allocation before startAt");
-        staking.updateRewardAllocation(10);
+        staking.increaseRewardAllocation(10);
         staking.setStartAt(startAt);
         vm.expectRevert("Cannot update reward allocation to more than the balance of the contract");
-        staking.updateRewardAllocation(10);
+        staking.increaseRewardAllocation(10);
 
         // transfer reward to distribute
         rewardToken.transfer(address(staking), initialReward);
-        staking.updateRewardAllocation(initialReward);
+        staking.increaseRewardAllocation(initialReward);
         assertEq(staking.rewardRate(), initialReward / (endAt - startAt));
         assertEq(staking.lastUpdateTime(), startAt);
         assertEq(staking.rewardPerTokenStored(), 0);
@@ -130,7 +130,7 @@ contract ERC20StakingTest is Test {
 
         // change reward rate adding more rewards
         rewardToken.transfer(address(staking), initialReward);
-        staking.updateRewardAllocation(initialReward);
+        staking.increaseRewardAllocation(initialReward);
         assertEq(staking.rewardRate(), (initialReward * 2) / (endAt + 100 - startAt));
     }
 
@@ -144,7 +144,7 @@ contract ERC20StakingTest is Test {
         staking.setStartAt(startAt);
         staking.setEndAt(endAt);
         rewardToken.transfer(address(staking), initialReward);
-        staking.updateRewardAllocation(initialReward);
+        staking.increaseRewardAllocation(initialReward);
         vm.stopPrank();
 
         // stake
@@ -211,7 +211,7 @@ contract ERC20StakingTest is Test {
         staking.setStartAt(startAt);
         staking.setEndAt(endAt);
         rewardToken.transfer(address(staking), initialReward);
-        staking.updateRewardAllocation(initialReward);
+        staking.increaseRewardAllocation(initialReward);
         vm.stopPrank();
 
         // forward to 200 seconds after startAt
@@ -267,7 +267,7 @@ contract ERC20StakingTest is Test {
         console.log("previousRewardRate", previousRewardRate);
 
         vm.startPrank(owner);
-        staking.updateRewardAllocation(0);
+        staking.increaseRewardAllocation(0);
         vm.stopPrank();
         console.log("newRewardRate", staking.rewardRate());
         assertGt(staking.rewardRate(), previousRewardRate);
@@ -283,7 +283,7 @@ contract ERC20StakingTest is Test {
         staking.setStartAt(startAt);
         staking.setEndAt(endAt);
         rewardToken.transfer(address(staking), initialReward);
-        staking.updateRewardAllocation(initialReward);
+        staking.increaseRewardAllocation(initialReward);
         vm.stopPrank();
 
         // actor1 stakes
@@ -419,7 +419,7 @@ contract ERC20StakingTest is Test {
         console.log("previousRewardRate", previousRewardRate);
 
         vm.startPrank(owner);
-        staking.updateRewardAllocation(0);
+        staking.increaseRewardAllocation(0);
         vm.stopPrank();
         console.log("newRewardRate", staking.rewardRate());
         assertGt(staking.rewardRate(), previousRewardRate);
@@ -435,7 +435,7 @@ contract ERC20StakingTest is Test {
         staking.setStartAt(startAt);
         staking.setEndAt(endAt);
         rewardToken.transfer(address(staking), initialReward);
-        staking.updateRewardAllocation(initialReward);
+        staking.increaseRewardAllocation(initialReward);
         vm.stopPrank();
 
         // actor1 stakes
@@ -508,7 +508,7 @@ contract ERC20StakingTest is Test {
         staking.setStartAt(startAt);
         staking.setEndAt(endAt);
         rewardToken.transfer(address(staking), initialReward);
-        staking.updateRewardAllocation(initialReward);
+        staking.increaseRewardAllocation(initialReward);
         vm.stopPrank();
 
         // actor1 stakes
@@ -543,7 +543,7 @@ contract ERC20StakingTest is Test {
 
         vm.startPrank(owner);
         rewardToken.transfer(address(staking), additionalReward);
-        staking.updateRewardAllocation(additionalReward);
+        staking.increaseRewardAllocation(additionalReward);
         vm.stopPrank();
 
         // evaluate
@@ -564,6 +564,5 @@ contract ERC20StakingTest is Test {
         assertEq(staking.rewardPerTokenStored(), (10 * 30 * 1e18 / 100) + (10 * newRewardRate * 1e18 / 100));
         assertEq(staking.lastUpdateTime(), startAt + 20);
         assertEq(staking.userRewardPerTokenPaid(actor1), (10 * 30 * 1e18 / 100) + (10 * newRewardRate * 1e18 / 100));
-
     }
 }
