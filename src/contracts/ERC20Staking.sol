@@ -49,8 +49,8 @@ contract ERC20Staking is Ownable {
         rewardRate = toDistributeRewards / (_endAt - lastTimeRewardApplicable());
     }
 
-    /// @notice Update reward allocation.
-    function updateRewardAllocation(uint256 reward) external onlyOwner updateReward(address(0)) {
+    /// @notice Increase reward allocation.
+    function increaseRewardAllocation(uint256 reward) external onlyOwner updateReward(address(0)) {
         uint256 _endAt = endAt;
         require(_endAt >= block.timestamp, "Cannot update reward allocation after endAt");
         require(startAt > 0, "Cannot update reward allocation before startAt");
