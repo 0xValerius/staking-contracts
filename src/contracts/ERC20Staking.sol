@@ -46,7 +46,7 @@ contract ERC20Staking is Ownable {
         require(_endAt >= block.timestamp, "Cannot set endAt in the past");
         require(_endAt > startAt, "Cannot set endAt before startAt");
         endAt = _endAt;
-        rewardRate = toDistributeRewards / (endAt - lastTimeRewardApplicable());
+        rewardRate = toDistributeRewards / (_endAt - lastTimeRewardApplicable());
     }
 
     /// @notice Update reward allocation.
