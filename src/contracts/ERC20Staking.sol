@@ -79,12 +79,15 @@ contract ERC20Staking is Ownable {
 
     /// @notice Allows the contract owner to recover any ERC20 token sent to the contract in error except for the staking and reward tokens.
     // TO-DO: remove excess reward tokens from the contract
-    function recoverERC20(address tokenAddress, uint256 tokenAmount) external onlyOwner {
-        require(
-            tokenAddress != address(stakingToken) && tokenAddress != address(rewardToken),
-            "Cannot withdraw the staking or reward tokens"
-        );
-        IERC20(tokenAddress).transfer(msg.sender, tokenAmount);
+    function recoverERC20(address tokenAddress, uint256 tokenAmount) external onlyOwner updateReward(address(0)) {
+        require(tokenAddress != address(stakingToken), "Cannot withdraw the staking");
+
+        if (tokenAddress == address(rewardToken)) {
+            require(tokenAmount <= rewardToken.balanceOf(address(this)) - owedRewards, "Cannot");
+            rewardToken.transfer(msg.sender, tokenAmount);
+        } else {
+            IERC20(tokenAddress).transfer(msg.sender, tokenAmount);
+        }
         //emit Recovered(tokenAddress, tokenAmount);
     }
 
