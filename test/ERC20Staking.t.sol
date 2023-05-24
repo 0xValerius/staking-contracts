@@ -586,7 +586,7 @@ contract ERC20StakingTest is Test {
     }
 
     function test_Simulation7() public {
-        /// Simulation: owner initializes the staking contract and load rewards. At startAt actor1 stakes 100 tokens. After 10 seconds the owner remove some rewards from the contract so that the rewardRate decreases. After 10 seconds the user claims his rewards.
+        /// Simulation: owner initializes the staking contract and load rewards. At startAt actor1 stakes 100 tokens. After 10 seconds the owner remove some rewards from the contract so that the rewardRate decreases. After 10 seconds the user claims his rewards. The owner recover the excess reward from the contract.
 
         uint256 stakeAmount = 100;
 
@@ -650,5 +650,14 @@ contract ERC20StakingTest is Test {
         assertEq(staking.rewardPerTokenStored(), (10 * 30 * 1e18 / 100) + (10 * newRewardRate * 1e18 / 100));
         assertEq(staking.lastUpdateTime(), startAt + 20);
         assertEq(staking.userRewardPerTokenPaid(actor1), (10 * 30 * 1e18 / 100) + (10 * newRewardRate * 1e18 / 100));
+
+        // owner recover excess reward
+        vm.startPrank(owner);
+        vm.expectRevert("Cannot remove more rewardToken than the excess amount present in the contract.");
+        staking.recoverERC20(address(rewardToken), removedReward + 1);
+        staking.recoverERC20(address(rewardToken), removedReward - 1);
+        staking.recoverERC20(address(rewardToken), 1);
+        vm.stopPrank();
+        assertEq(rewardToken.balanceOf(owner), initialRewardAmount - initialReward + removedReward);
     }
 }
