@@ -809,7 +809,7 @@ contract ERC20StakingTest is Test {
         );
 
         // this gives a small rounding error
-        //assertEq(staking.owedRewards(), 0);
+        assertApproxEqAbs(staking.owedRewards(), 0, 1);
 
         // check earned
         assertEq(staking.earned(actor1), 0);
