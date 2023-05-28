@@ -150,6 +150,14 @@ contract ERC20Staking is Ownable {
     }
 
     /* ========== MODIFIERS ========== */
+    /**
+     * @dev Modifier that updates the rewards for an account before executing a function.
+     * The reward per token is updated and stored, and the last update time is set to the last time rewards were applicable.
+     * If the account is not the zero address, the rewards and paid reward per token for the account are updated.
+     * This modifier is used before stake, withdraw, and claimReward functions, and all admin functions that change reward parameters.
+     *
+     * @param account The account for which to update the rewards. If this is the zero address, no rewards are updated for any account.
+     */
     modifier updateReward(address account) {
         // update distributed rewards when totalStaked != 0, otherwise no rewards are distributed
         if (totalStaked != 0) {
