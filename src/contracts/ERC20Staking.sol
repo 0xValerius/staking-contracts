@@ -47,6 +47,7 @@ contract ERC20Staking is Ownable {
         require(_endAt > startAt, "Cannot set endAt before startAt");
         endAt = _endAt;
         rewardRate = toDistributeRewards / (_endAt - lastTimeRewardApplicable());
+        emit ChangedEndAt(_endAt);
     }
 
     /// @notice Increase reward allocation.
@@ -61,6 +62,7 @@ contract ERC20Staking is Ownable {
 
         toDistributeRewards += reward;
         rewardRate = toDistributeRewards / (_endAt - lastTimeRewardApplicable());
+        emit UpdatedRewardAllocation(toDistributeRewards, rewardRate);
     }
 
     /// @notice Decrease reward allocation.
@@ -75,6 +77,7 @@ contract ERC20Staking is Ownable {
 
         toDistributeRewards -= reward;
         rewardRate = toDistributeRewards / (_endAt - lastTimeRewardApplicable());
+        emit UpdatedRewardAllocation(toDistributeRewards, rewardRate);
     }
 
     /// @notice Allows the contract owner to recover any ERC20 token sent to the contract in error except for the staking and reward tokens.
@@ -91,7 +94,7 @@ contract ERC20Staking is Ownable {
         } else {
             IERC20(tokenAddress).transfer(msg.sender, tokenAmount);
         }
-        //emit Recovered(tokenAddress, tokenAmount);
+        emit Recovered(tokenAddress, tokenAmount);
     }
 
     /* ========== MODIFIERS ========== */
@@ -120,7 +123,7 @@ contract ERC20Staking is Ownable {
         totalStaked += amount;
         balances[msg.sender] += amount;
         stakingToken.transferFrom(msg.sender, address(this), amount);
-        // emit Staked(msg.sender, amount);
+        emit Staked(msg.sender, amount);
     }
 
     /// @notice Withdraw ERC20 tokens.
@@ -129,7 +132,7 @@ contract ERC20Staking is Ownable {
         totalStaked -= amount;
         balances[msg.sender] -= amount;
         stakingToken.transfer(msg.sender, amount);
-        // emit Withdrawn(msg.sender, amount);
+        emit Withdrawn(msg.sender, amount);
     }
 
     /// @notice Allows an account to claim their rewards without unstaking.
@@ -139,7 +142,7 @@ contract ERC20Staking is Ownable {
             rewards[msg.sender] = 0;
             owedRewards -= reward;
             rewardToken.transfer(msg.sender, reward);
-            // emit RewardPaid(msg.sender, reward);
+            emit RewardPaid(msg.sender, reward);
         }
     }
 
@@ -167,4 +170,12 @@ contract ERC20Staking is Ownable {
     function earned(address account) public view returns (uint256) {
         return (balances[account] * (rewardPerToken() - userRewardPerTokenPaid[account])) / 1e18 + rewards[account];
     }
+
+    /* ========== EVENTS ========== */
+    event ChangedEndAt(uint256);
+    event UpdatedRewardAllocation(uint256 newToDistribute, uint256 newRewardRate);
+    event Recovered(address token, uint256 amount);
+    event Staked(address indexed user, uint256 amount);
+    event Withdrawn(address indexed user, uint256 amount);
+    event RewardPaid(address indexed user, uint256 reward);
 }
