@@ -1,11 +1,30 @@
 // SPDX-License-Identifier: MIT
 
+/*
+      .oooo.               oooooo     oooo           oooo                      o8o                       
+     d8P'`Y8b               `888.     .8'            `888                      `"'                       
+    888    888 oooo    ooo   `888.   .8'    .oooo.    888   .ooooo.  oooo d8b oooo  oooo  oooo   .oooo.o 
+    888    888  `88b..8P'     `888. .8'    `P  )88b   888  d88' `88b `888""8P `888  `888  `888  d88(  "8 
+    888    888    Y888'        `888.8'      .oP"888   888  888ooo888  888      888   888   888  `"Y88b.  
+    `88b  d88'  .o8"'88b        `888'      d8(  888   888  888    .o  888      888   888   888  o.  )88b 
+     `Y8bd8P'  o88'   888o       `8'       `Y888""8o o888o `Y8bod8P' d888b    o888o  `V88V"V8P' 8""888P' 
+*/
+
 pragma solidity ^0.8.17;
 
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {Ownable} from "openzeppelin/access/Ownable.sol";
 import {Math} from "openzeppelin/utils/math/Math.sol";
 
+/**
+ * @title ERC20Staking
+ * @author 0xValerius
+ * @notice This contract allows users to stake ERC20 tokens and earn rewards.
+ * @dev The contract owner can set the reward allocation and recover erroneously sent tokens.
+ * The staking period is defined by a start and end timestamp, which can only be set once by the contract owner.
+ * Users can stake tokens, withdraw their stake, and claim rewards at any time. Unclaimed rewards are stored in the contract.
+ * This contract uses the OpenZeppelin library for secure math operations and access control.
+ */
 contract ERC20Staking is Ownable {
     /* ========== STATE VARIABLES ========== */
     IERC20 public immutable stakingToken;
@@ -34,14 +53,26 @@ contract ERC20Staking is Ownable {
     }
 
     /* ========== ADMIN FUNCTIONS ========== */
-    /// @notice Set starting timestamp of the staking period.
+    /**
+     * @notice Set the starting timestamp of the staking period.
+     * @dev Can only be called by the contract owner and only once.
+     * The starting timestamp must be in the future.
+     * @param _startAt The starting timestamp of the staking period.
+     */
     function setStartAt(uint256 _startAt) external onlyOwner {
         require(startAt == 0, "Cannot set startAt twice");
         require(_startAt > block.timestamp, "Cannot set startAt in the past");
         startAt = _startAt;
     }
 
-    /// @notice Set ending timestamp of the staking period.
+    /**
+     * @notice Set the ending timestamp of the staking period.
+     * @dev Can only be called by the contract owner.
+     * The ending timestamp must be equal to or later than the current time and later than the starting timestamp.
+     * The reward rate is recalculated based on the new ending timestamp.
+     * Emits a {ChangedEndAt} event.
+     * @param _endAt The ending timestamp of the staking period.
+     */
     function setEndAt(uint256 _endAt) external onlyOwner updateReward(address(0)) {
         require(_endAt >= block.timestamp, "Cannot set endAt in the past");
         require(_endAt > startAt, "Cannot set endAt before startAt");
@@ -50,7 +81,14 @@ contract ERC20Staking is Ownable {
         emit ChangedEndAt(_endAt);
     }
 
-    /// @notice Increase reward allocation.
+    /**
+     * @notice Increase the reward allocation.
+     * @dev Can only be called by the contract owner.
+     * The new reward allocation must not exceed the contract balance.
+     * The reward rate is recalculated based on the new reward allocation.
+     * Emits a {UpdatedRewardAllocation} event.
+     * @param reward The amount of reward tokens to add to the allocation.
+     */
     function increaseRewardAllocation(uint256 reward) external onlyOwner updateReward(address(0)) {
         uint256 _endAt = endAt;
         //require(_endAt >= block.timestamp, "Cannot update reward allocation after endAt");
@@ -65,7 +103,14 @@ contract ERC20Staking is Ownable {
         emit UpdatedRewardAllocation(toDistributeRewards, rewardRate);
     }
 
-    /// @notice Decrease reward allocation.
+    /**
+     * @notice Decrease the reward allocation.
+     * @dev Can only be called by the contract owner.
+     * The new reward allocation must not be less than the total owed rewards.
+     * The reward rate is recalculated based on the new reward allocation.
+     * Emits a {UpdatedRewardAllocation} event.
+     * @param reward The amount of reward tokens to subtract from the allocation.
+     */
     function decreaseRewardAllocation(uint256 reward) external onlyOwner updateReward(address(0)) {
         uint256 _endAt = endAt;
         //require(_endAt >= block.timestamp, "Cannot update reward allocation after endAt");
@@ -80,8 +125,15 @@ contract ERC20Staking is Ownable {
         emit UpdatedRewardAllocation(toDistributeRewards, rewardRate);
     }
 
-    /// @notice Allows the contract owner to recover any ERC20 token sent to the contract in error except for the staking and reward tokens.
-    // TO-DO: remove excess reward tokens from the contract
+    /**
+     * @notice Recover any ERC20 token sent to the contract by mistake.
+     * @dev Can only be called by the contract owner.
+     * Does not allow recovering the staking token.
+     * If the token to recover is the reward token, does not allow recovering more than the excess amount in the contract.
+     * Emits a {Recovered} event.
+     * @param tokenAddress The address of the token to recover.
+     * @param tokenAmount The amount of tokens to recover.
+     */
     function recoverERC20(address tokenAddress, uint256 tokenAmount) external onlyOwner updateReward(address(0)) {
         require(tokenAddress != address(stakingToken), "Cannot withdraw the staking token");
 
@@ -117,7 +169,14 @@ contract ERC20Staking is Ownable {
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-    /// @notice Stake ERC20 tokens to earn rewards.
+    /**
+     * @notice Stake ERC20 tokens to earn rewards.
+     * @dev Requires the staking amount to be greater than zero.
+     * User's staking balance and the total staked amount are increased by the staking amount.
+     * Staking tokens are transferred from the user to this contract.
+     * Emits a {Staked} event.
+     * @param amount The amount of staking tokens to stake.
+     */
     function stake(uint256 amount) external updateReward(msg.sender) {
         require(amount > 0, "Cannot stake 0");
         totalStaked += amount;
@@ -126,7 +185,14 @@ contract ERC20Staking is Ownable {
         emit Staked(msg.sender, amount);
     }
 
-    /// @notice Withdraw ERC20 tokens.
+    /**
+     * @notice Withdraw staked ERC20 tokens.
+     * @dev Requires the withdrawal amount to be greater than zero.
+     * User's staking balance and the total staked amount are decreased by the withdrawal amount.
+     * Staking tokens are transferred from this contract to the user.
+     * Emits a {Withdrawn} event.
+     * @param amount The amount of staking tokens to withdraw.
+     */
     function withdraw(uint256 amount) public updateReward(msg.sender) {
         require(amount > 0, "Cannot withdraw 0");
         totalStaked -= amount;
@@ -135,7 +201,12 @@ contract ERC20Staking is Ownable {
         emit Withdrawn(msg.sender, amount);
     }
 
-    /// @notice Allows an account to claim their rewards without unstaking.
+    /**
+     * @notice Claim earned rewards without unstaking.
+     * @dev The user's reward is set to zero and subtracted from the total owed rewards.
+     * Reward tokens are transferred from this contract to the user.
+     * Emits a {RewardPaid} event.
+     */
     function claimReward() public updateReward(msg.sender) {
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
@@ -146,19 +217,30 @@ contract ERC20Staking is Ownable {
         }
     }
 
-    /// @notice Allows an account to claim their rewards and unstake.
+    /**
+     * @notice Unstake all staked tokens and claim earned rewards.
+     * @dev This is a shortcut function that calls {withdraw} and {claimReward}.
+     */
     function exit() external {
         withdraw(balances[msg.sender]);
         claimReward();
     }
 
     /* ========== VIEW FUNCTIONS ========== */
-    /// @notice Returns the last time rewards were applicable
+    /**
+     * @notice Get the last time when rewards were applicable.
+     * @return The minimum between the current timestamp and the staking period end timestamp,
+     * or the staking period start timestamp if it's later than the current timestamp.
+     */
     function lastTimeRewardApplicable() public view returns (uint256) {
         return block.timestamp < endAt ? Math.max(startAt, block.timestamp) : endAt;
     }
 
-    /// @notice Returns the reward per token earned by staking until the last time rewards were applicable
+    /**
+     * @notice Get the reward per token until the last time rewards were applicable.
+     * @return If there are no staked tokens, returns the stored reward per token.
+     * Otherwise, returns the sum of the stored reward per token and the newly accumulated reward per token.
+     */
     function rewardPerToken() public view returns (uint256) {
         if (totalStaked == 0) {
             return rewardPerTokenStored;
@@ -166,7 +248,11 @@ contract ERC20Staking is Ownable {
         return rewardPerTokenStored + ((lastTimeRewardApplicable() - lastUpdateTime) * rewardRate * 1e18) / totalStaked;
     }
 
-    /// @notice Returns the amount of rewards earned by staking
+    /**
+     * @notice Get the amount of rewards earned by an account.
+     * @param account The address of the account.
+     * @return The amount of rewards earned by the account.
+     */
     function earned(address account) public view returns (uint256) {
         return (balances[account] * (rewardPerToken() - userRewardPerTokenPaid[account])) / 1e18 + rewards[account];
     }
