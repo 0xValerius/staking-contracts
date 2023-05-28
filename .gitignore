@@ -12,3 +12,6 @@ docs/
 
 # Dotenv file
 .env
+
+# TO-DO
+todo.txt
