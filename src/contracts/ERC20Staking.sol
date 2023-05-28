@@ -19,7 +19,7 @@ import {Math} from "openzeppelin/utils/math/Math.sol";
 /**
  * @title ERC20Staking
  * @author 0xValerius
- * @notice This contract allows users to stake ERC20 tokens and earn rewards.
+ * @notice This contract allows users to stake ERC20 tokens and earn rewards. Inspired by the Synthetix staking contract.
  * @dev The contract owner can set the reward allocation and recover erroneously sent tokens.
  * The staking period is defined by a start and end timestamp, which can only be set once by the contract owner.
  * Users can stake tokens, withdraw their stake, and claim rewards at any time. Unclaimed rewards are stored in the contract.
