@@ -24,4 +24,12 @@ contract MockNFTTest is Test {
         assertEq(nft.balanceOf(actor1), 1);
         assertEq(nft.totalSupply(), 1);
     }
+
+    function test_MockNFTTransfer() public {
+        nft.mint(actor1, 1);
+        vm.prank(actor1);
+        nft.transferFrom(actor1, actor2, 0);
+        assertEq(nft.balanceOf(actor1), 0);
+        assertEq(nft.balanceOf(actor2), 1);
+    }
 }
