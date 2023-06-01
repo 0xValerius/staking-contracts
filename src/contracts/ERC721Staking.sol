@@ -90,4 +90,21 @@ contract ERC721AStaking is Ownable {
     }
 
     // add a function recover wrongly sent NFT
+
+    /* ========== MODIFIERS ========== */
+
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
+    /* ========== VIEW FUNCTIONS ========== */
+
+    /* ========== EVENTS ========== */
+    event ChangedEndAt(uint256);
+    event UpdatedRewardAllocation(uint256 newToDistribute, uint256 newRewardRate);
+    // modify to RecoveredERC20
+    event Recovered(address token, uint256 amount);
+    // create event for RecoveredERC721
+    // adapt staked / withdrawn events to ERC721A
+    event Staked(address indexed user, uint256 amount);
+    event Withdrawn(address indexed user, uint256 amount);
+    event RewardPaid(address indexed user, uint256 reward);
 }
