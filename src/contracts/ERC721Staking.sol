@@ -132,6 +132,21 @@ contract ERC721AStaking is Ownable {
         emit Withdrawn(msg.sender, tokenIds);
     }
 
+    function claimReward() public updateReward(msg.sender) {
+        uint256 reward = rewards[msg.sender];
+        if (reward > 0) {
+            rewards[msg.sender] = 0;
+            owedRewards -= reward;
+            rewardToken.transfer(msg.sender, reward);
+            emit RewardPaid(msg.sender, reward);
+        }
+    }
+
+    function exit() external {
+        withdraw(tokensStaked[msg.sender]);
+        claimReward();
+    }
+
     /* ========== VIEW FUNCTIONS ========== */
 
     /* ========== EVENTS ========== */
