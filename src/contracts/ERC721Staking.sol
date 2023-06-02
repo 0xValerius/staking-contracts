@@ -99,17 +99,37 @@ contract ERC721AStaking is Ownable {
     /* ========== MUTATIVE FUNCTIONS ========== */
     function stake(uint256[] memory tokenIds) external updateReward(msg.sender) {
         require(tokenIds.length != 0, "Staking: no tokenIds provided.");
-
         uint256 amount = tokenIds.length;
         for (uint256 i = 0; i < amount; i++) {
-            nftCollection.safeTransferFrom(msg.sender, address(this), tokenIds[i]);
             stakedAssets[tokenIds[i]] = msg.sender;
             tokensStaked[msg.sender].push(tokenIds[i]);
             tokenIdToIndex[tokenIds[i]] = tokensStaked[msg.sender].length - 1;
+            nftCollection.transferFrom(msg.sender, address(this), tokenIds[i]);
         }
         totalStaked += amount;
-
         emit Staked(msg.sender, tokenIds);
+    }
+
+    function withdraw(uint256[] memory tokenIds) public updateReward(msg.sender) {
+        require(tokenIds.length != 0, "Withdrawing: no tokenIds provided.");
+        uint256 amount = tokenIds.length;
+
+        for (uint256 i = 0; i < amount; i++) {
+            require(stakedAssets[tokenIds[i]] == msg.sender, "Withdrawing: token not owned by user.");
+            stakedAssets[tokenIds[i]] = address(0);
+            uint256[] storage userTokens = tokensStaked[msg.sender];
+            uint256 index = tokenIdToIndex[tokenIds[i]];
+            uint256 lastTokenIdIndex = userTokens.length - 1;
+            if (index != lastTokenIdIndex) {
+                uint256 lastTokenId = userTokens[lastTokenIdIndex];
+                userTokens[index] = lastTokenId;
+                tokenIdToIndex[lastTokenId] = index;
+            }
+            userTokens.pop();
+            nftCollection.transferFrom(address(this), msg.sender, tokenIds[i]);
+        }
+        totalStaked -= amount;
+        emit Withdrawn(msg.sender, tokenIds);
     }
 
     /* ========== VIEW FUNCTIONS ========== */
