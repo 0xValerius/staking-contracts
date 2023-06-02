@@ -95,6 +95,20 @@ contract ERC721AStaking is Ownable {
     // add a function recover wrongly sent NFT
 
     /* ========== MODIFIERS ========== */
+    modifier updateReward(address account) {
+        if (totalStaked != 0) {
+            uint256 released = (lastTimeRewardApplicable() - lastUpdateTime) * rewardRate;
+            owedRewards += released;
+            toDistributeRewards -= released;
+        }
+
+        rewardPerTokenStored = rewardPerToken();
+        lastUpdateTime = lastTimeRewardApplicable();
+        if (account != address(0)) {
+            rewards[account] = earned(account);
+            userRewardPerTokenPaid[account] = rewardPerTokenStored;
+        }
+    }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
     function stake(uint256[] memory tokenIds) external updateReward(msg.sender) {
