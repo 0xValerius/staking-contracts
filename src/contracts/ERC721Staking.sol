@@ -148,6 +148,21 @@ contract ERC721AStaking is Ownable {
     }
 
     /* ========== VIEW FUNCTIONS ========== */
+    function lastTimeRewardApplicable() public view returns (uint256) {
+        return block.timestamp < endAt ? Math.max(startAt, block.timestamp) : endAt;
+    }
+
+    function rewardPerToken() public view returns (uint256) {
+        if (totalStaked == 0) {
+            return rewardPerTokenStored;
+        }
+        return rewardPerTokenStored + ((lastTimeRewardApplicable() - lastUpdateTime) * rewardRate * 1e18) / totalStaked;
+    }
+
+    function earned(address account) public view returns (uint256) {
+        return (tokensStaked[account].length * (rewardPerToken() - userRewardPerTokenPaid[account])) / 1e18
+            + rewards[account];
+    }
 
     /* ========== EVENTS ========== */
     event ChangedEndAt(uint256);
