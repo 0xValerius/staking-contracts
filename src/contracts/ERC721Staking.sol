@@ -15,13 +15,16 @@ contract ERC721AStaking is Ownable {
     uint256 public startAt;
     uint256 public endAt;
     uint256 public rewardRate;
-    uint256 public rewardPerNFTStored;
+    uint256 public rewardPerTokenStored;
     uint256 public lastUpdateTime;
 
-    mapping(address => uint256) public userRewardPerItemPaid;
+    mapping(address => uint256) public userRewardPerTokenPaid;
     mapping(address => uint256) public rewards;
+    mapping(uint256 => address) public stakedAssets;
+    mapping(address => uint256[]) private tokensStaked;
+    mapping(uint256 => uint256) public tokenIdToIndex;
 
-    uint256 public totalStakedItem;
+    uint256 public totalStaked;
     uint256 public toDistributeRewards;
     uint256 public owedRewards;
 
@@ -94,6 +97,20 @@ contract ERC721AStaking is Ownable {
     /* ========== MODIFIERS ========== */
 
     /* ========== MUTATIVE FUNCTIONS ========== */
+    function stake(uint256[] memory tokenIds) external updateReward(msg.sender) {
+        require(tokenIds.length != 0, "Staking: no tokenIds provided.");
+
+        uint256 amount = tokenIds.length;
+        for (uint256 i = 0; i < amount; i++) {
+            nftCollection.safeTransferFrom(msg.sender, address(this), tokenIds[i]);
+            stakedAssets[tokenIds[i]] = msg.sender;
+            tokensStaked[msg.sender].push(tokenIds[i]);
+            tokenIdToIndex[tokenIds[i]] = tokensStaked[msg.sender].length - 1;
+        }
+        totalStaked += amount;
+
+        emit Staked(msg.sender, tokenIds);
+    }
 
     /* ========== VIEW FUNCTIONS ========== */
 
@@ -103,8 +120,8 @@ contract ERC721AStaking is Ownable {
     // modify to RecoveredERC20
     event Recovered(address token, uint256 amount);
     // create event for RecoveredERC721
-    // adapt staked / withdrawn events to ERC721A
-    event Staked(address indexed user, uint256 amount);
-    event Withdrawn(address indexed user, uint256 amount);
+    // withdrawn events to ERC721A
+    event Staked(address indexed user, uint256[] tokenIds);
+    event Withdrawn(address indexed user, uint256[] tokenIds);
     event RewardPaid(address indexed user, uint256 reward);
 }
