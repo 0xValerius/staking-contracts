@@ -164,6 +164,15 @@ contract ERC721AStaking is Ownable {
             + rewards[account];
     }
 
+    function userStakeInfo(address account)
+        public
+        view
+        returns (uint256[] memory _tokensStaked, uint256 _claimableRewards)
+    {
+        _tokensStaked = tokensStaked[account];
+        _claimableRewards = earned(account);
+    }
+
     /* ========== EVENTS ========== */
     event ChangedEndAt(uint256);
     event UpdatedRewardAllocation(uint256 newToDistribute, uint256 newRewardRate);
