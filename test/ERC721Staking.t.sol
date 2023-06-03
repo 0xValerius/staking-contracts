@@ -48,10 +48,20 @@ contract ERC721StakingTest is Test {
         assertEq(collection.name(), "Staking NFT");
         assertEq(collection.symbol(), "SNFT");
         assertEq(collection.totalSupply(), 15);
+        assertEq(collection.balanceOf(owner), 0);
+        assertEq(collection.balanceOf(actor1), 5);
+        assertEq(collection.balanceOf(actor2), 5);
+        assertEq(collection.balanceOf(actor3), 5);
 
         assertEq(rewardToken.name(), "Reward Token");
         assertEq(rewardToken.symbol(), "RTK");
         assertEq(rewardToken.totalSupply(), initialMintAmount);
         assertEq(rewardToken.balanceOf(owner), initialMintAmount);
+    }
+
+    function test_ERC721StakingDeployment() public {
+        assertEq(address(staking.nftCollection()), address(collection));
+        assertEq(address(staking.rewardToken()), address(rewardToken));
+        assertEq(staking.owner(), owner);
     }
 }
