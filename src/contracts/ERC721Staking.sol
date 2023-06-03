@@ -7,7 +7,7 @@ import {IERC721A} from "ERC721A/IERC721A.sol";
 import {Ownable} from "openzeppelin/access/Ownable.sol";
 import {Math} from "openzeppelin/utils/math/Math.sol";
 
-contract ERC721AStaking is Ownable {
+contract ERC721Staking is Ownable {
     /* ========== STATE VARIABLES ========== */
     IERC721A public immutable nftCollection;
     IERC20 public immutable rewardToken;
@@ -108,6 +108,7 @@ contract ERC721AStaking is Ownable {
             rewards[account] = earned(account);
             userRewardPerTokenPaid[account] = rewardPerTokenStored;
         }
+        _;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
