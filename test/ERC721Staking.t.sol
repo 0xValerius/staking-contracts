@@ -234,4 +234,82 @@ contract ERC721StakingTest is Test {
         assertEq(staking.toDistributeRewards(), initialRewardAllocated - 300);
         assertEq(staking.owedRewards(), 0);
     }
+
+    function test_Simulation3() public {
+        /// Simulation: owner initializes the staking contract and loads rewards. 200 seconds after startAt, the actor1 stakes 5 NFTs. After 10 seconds the user1 claims rewards.
+
+        // initialize staking contract
+        vm.startPrank(owner);
+        staking.setStartAt(startAt);
+        staking.setEndAt(endAt);
+        rewardToken.transfer(address(staking), initialRewardAllocated);
+        staking.increaseRewardAllocation(initialRewardAllocated);
+        vm.stopPrank();
+
+        // forward to 200 seconds after startAt
+        vm.warp(startAt + 200);
+
+        // stake
+        vm.startPrank(actor1);
+        collection.approve(address(staking), actor1Tokens[0]);
+        collection.approve(address(staking), actor1Tokens[1]);
+        collection.approve(address(staking), actor1Tokens[2]);
+        collection.approve(address(staking), actor1Tokens[3]);
+        collection.approve(address(staking), actor1Tokens[4]);
+        staking.stake(actor1Tokens);
+
+        // evaluate
+        assertEq(collection.balanceOf(actor1), 0);
+        assertEq(staking.totalStaked(), stakeAmount);
+        (uint256[] memory _actor1Tokens, uint256 _earned) = staking.userStakeInfo(actor1);
+        assertEq(_actor1Tokens, actor1Tokens);
+        assertEq(_earned, 0);
+        assertEq(staking.earned(actor1), 0);
+        assertEq(staking.rewardRate(), 30);
+        assertEq(staking.rewardPerToken(), 0);
+        assertEq(staking.lastUpdateTime(), startAt + 200);
+
+        // forward to 210 seconds after startAt
+        vm.warp(startAt + 210);
+
+        // evaluate
+        assertEq(staking.earned(actor1), 300);
+        assertEq(staking.rewardPerToken(), (10 * 30 * 1e18) / stakeAmount);
+        assertEq(staking.lastUpdateTime(), startAt + 200);
+        assertEq(staking.rewardPerTokenStored(), 0);
+        assertEq(staking.userRewardPerTokenPaid(actor1), 0);
+        assertEq(staking.toDistributeRewards(), initialRewardAllocated);
+        assertEq(staking.owedRewards(), 0);
+
+        // user claims rewards and exit
+        staking.exit();
+        vm.stopPrank();
+
+        // evaluate
+        assertEq(collection.balanceOf(actor1), 5);
+        assertEq(rewardToken.balanceOf(actor1), 300);
+        assertEq(staking.totalStaked(), 0);
+        (_actor1Tokens, _earned) = staking.userStakeInfo(actor1);
+        assertEq(_actor1Tokens, noStaked);
+        assertEq(_earned, 0);
+        assertEq(staking.earned(actor1), 0);
+        assertEq(staking.rewardPerToken(), (10 * 30 * 1e18) / stakeAmount);
+        assertEq(staking.lastUpdateTime(), startAt + 210);
+        assertEq(staking.userRewardPerTokenPaid(actor1), (10 * 30 * 1e18) / stakeAmount);
+        assertEq(staking.toDistributeRewards(), initialRewardAllocated - 300);
+        assertEq(staking.owedRewards(), 0);
+
+        /// reward are not distributed during the first 10 seconds. They can be either claimed by the owner or reintroduced in the staking contract. To maintain the same reward rate the owner should reintroduce the rewards in the staking contract and increase endAt. Reintroducing the rewards without increasing endAt will increase the reward rate. The latter scenario can be achieved by calling updateRewardAllocation(0). This will update the reward rate so that the pre-fixed staking reward are distributed by the end of the staking period.
+
+        // reintroduce rewards
+        uint256 previousRewardRate = staking.rewardRate();
+        console.log("Left Over", staking.toDistributeRewards() - (endAt - block.timestamp) * previousRewardRate);
+        console.log("Previous Reward Rate", previousRewardRate);
+
+        vm.startPrank(owner);
+        staking.increaseRewardAllocation(0);
+        vm.stopPrank();
+        console.log("New Reward Rate", staking.rewardRate());
+        assertGt(staking.rewardRate(), previousRewardRate);
+    }
 }
