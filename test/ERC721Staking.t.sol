@@ -41,7 +41,7 @@ contract ERC721StakingTest is Test {
         collection.mint(actor3, initialMintAmount);
 
         // Mint reward tokens to owner
-        deal(address(rewardToken), owner, initialMintAmount, true);
+        deal(address(rewardToken), owner, initialRewardMinted, true);
     }
 
     function test_MockTokenDeployment() public {
@@ -55,8 +55,8 @@ contract ERC721StakingTest is Test {
 
         assertEq(rewardToken.name(), "Reward Token");
         assertEq(rewardToken.symbol(), "RTK");
-        assertEq(rewardToken.totalSupply(), initialMintAmount);
-        assertEq(rewardToken.balanceOf(owner), initialMintAmount);
+        assertEq(rewardToken.totalSupply(), initialRewardMinted);
+        assertEq(rewardToken.balanceOf(owner), initialRewardMinted);
     }
 
     function test_ERC721StakingDeployment() public {
@@ -107,5 +107,53 @@ contract ERC721StakingTest is Test {
         assertEq(staking.lastTimeRewardApplicable(), startAt + 10);
         vm.warp(endAt + 10);
         assertEq(staking.lastTimeRewardApplicable(), endAt);
+    }
+
+    function test_increaseRewardAllocation() public {
+        vm.startPrank(owner);
+        //vm.expectRevert("Cannot update reward allocation after endAt");
+        //staking.increaseRewardAllocation(10);
+        staking.setEndAt(endAt);
+        //vm.expectRevert("Cannot update reward allocation before startAt");
+        //staking.increaseRewardAllocation(10);
+        staking.setStartAt(startAt);
+        vm.expectRevert("Cannot update reward allocation to more than the balance of the contract");
+        staking.increaseRewardAllocation(10);
+
+        // transfer reward to distribute
+        rewardToken.transfer(address(staking), initialRewardAllocated);
+        staking.increaseRewardAllocation(initialRewardAllocated);
+        assertEq(staking.rewardRate(), initialRewardAllocated / (endAt - startAt));
+        assertEq(staking.lastUpdateTime(), startAt);
+        assertEq(staking.rewardPerTokenStored(), 0);
+        assertEq(staking.toDistributeRewards(), initialRewardAllocated);
+
+        // change reward rate modifying endAt
+        staking.setEndAt(endAt + 100);
+        assertEq(staking.rewardRate(), initialRewardAllocated / (endAt + 100 - startAt));
+
+        // change reward rate adding more rewards
+        rewardToken.transfer(address(staking), initialRewardAllocated);
+        staking.increaseRewardAllocation(initialRewardAllocated);
+        assertEq(staking.rewardRate(), (initialRewardAllocated * 2) / (endAt + 100 - startAt));
+    }
+
+    function test_decreaseRewardAllocation() public {
+        vm.startPrank(owner);
+        staking.setEndAt(endAt);
+        staking.setStartAt(startAt);
+
+        // transfer reward to distribute
+        rewardToken.transfer(address(staking), initialRewardAllocated);
+        staking.increaseRewardAllocation(initialRewardAllocated);
+        assertEq(staking.rewardRate(), initialRewardAllocated / (endAt - startAt));
+        assertEq(staking.lastUpdateTime(), startAt);
+        assertEq(staking.rewardPerTokenStored(), 0);
+        assertEq(staking.toDistributeRewards(), initialRewardAllocated);
+
+        // change reward rate decreasing rewards
+        staking.decreaseRewardAllocation(initialRewardAllocated / 2);
+        assertEq(staking.rewardRate(), (initialRewardAllocated / 2) / (endAt - startAt));
+        assertEq(staking.toDistributeRewards(), initialRewardAllocated / 2);
     }
 }
