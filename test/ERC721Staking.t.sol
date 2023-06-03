@@ -64,4 +64,48 @@ contract ERC721StakingTest is Test {
         assertEq(address(staking.rewardToken()), address(rewardToken));
         assertEq(staking.owner(), owner);
     }
+
+    function test_setStartAt() public {
+        // non-owner cannot set startAt
+        vm.prank(actor1);
+        vm.expectRevert("Ownable: caller is not the owner");
+        staking.setStartAt(1);
+
+        // owner can set startAt
+        vm.prank(owner);
+        staking.setStartAt(startAt);
+        assertEq(staking.startAt(), startAt);
+    }
+
+    function test_setEndAt() public {
+        // non-owner cannot set endAt
+        vm.prank(actor1);
+        vm.expectRevert("Ownable: caller is not the owner");
+        staking.setEndAt(1);
+
+        // Cannot set endAt in the past
+        vm.startPrank(owner);
+        vm.expectRevert("Cannot set endAt in the past");
+        staking.setEndAt(block.timestamp - 1);
+
+        staking.setStartAt(startAt);
+        vm.expectRevert("Cannot set endAt before startAt");
+        staking.setEndAt(startAt);
+
+        staking.setEndAt(endAt);
+        vm.stopPrank();
+        assertEq(staking.endAt(), endAt);
+        assertEq(staking.rewardRate(), 0);
+    }
+
+    function test_lastTimeRewardApplicable() public {
+        vm.startPrank(owner);
+        staking.setStartAt(startAt);
+        staking.setEndAt(endAt);
+        assertEq(staking.lastTimeRewardApplicable(), startAt);
+        vm.warp(startAt + 10);
+        assertEq(staking.lastTimeRewardApplicable(), startAt + 10);
+        vm.warp(endAt + 10);
+        assertEq(staking.lastTimeRewardApplicable(), endAt);
+    }
 }
