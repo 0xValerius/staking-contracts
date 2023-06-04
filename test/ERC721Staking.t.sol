@@ -312,4 +312,171 @@ contract ERC721StakingTest is Test {
         console.log("New Reward Rate", staking.rewardRate());
         assertGt(staking.rewardRate(), previousRewardRate);
     }
+
+    function test_Simulation4() public {
+        /// Simulation: owner initializes the staking contract and loads rewards. At time startAt the actor1 stakes 5 NFTs. After 10 seconds the actor2 stakes 5 NFTs. After 10 seconds the user3 stakes 5 NFTs. After 10 seconds the user1 claims rewards. After 10 seconds the user2 claims rewards. After 10 seconds the user3 claims rewards.
+
+        // initialize staking contract
+        vm.startPrank(owner);
+        staking.setStartAt(startAt);
+        staking.setEndAt(endAt);
+        rewardToken.transfer(address(staking), initialRewardAllocated);
+        staking.increaseRewardAllocation(initialRewardAllocated);
+        vm.stopPrank();
+
+        // actor1 stakes
+        vm.startPrank(actor1);
+        collection.approve(address(staking), actor1Tokens[0]);
+        collection.approve(address(staking), actor1Tokens[1]);
+        collection.approve(address(staking), actor1Tokens[2]);
+        collection.approve(address(staking), actor1Tokens[3]);
+        collection.approve(address(staking), actor1Tokens[4]);
+        staking.stake(actor1Tokens);
+        vm.stopPrank();
+
+        // evaluate
+        assertEq(collection.balanceOf(actor1), 0);
+        assertEq(staking.totalStaked(), stakeAmount);
+        (uint256[] memory _actor1Tokens, uint256 _earnedActor1) = staking.userStakeInfo(actor1);
+        assertEq(_actor1Tokens, actor1Tokens);
+        assertEq(_earnedActor1, 0);
+        assertEq(staking.earned(actor1), 0);
+        assertEq(staking.rewardRate(), 30);
+        assertEq(staking.rewardPerToken(), 0);
+        assertEq(staking.lastUpdateTime(), startAt);
+
+        // forward to startAt + 10
+        vm.warp(startAt + 10);
+
+        // actor2 stakes
+        vm.startPrank(actor2);
+        collection.approve(address(staking), actor2Tokens[0]);
+        collection.approve(address(staking), actor2Tokens[1]);
+        collection.approve(address(staking), actor2Tokens[2]);
+        collection.approve(address(staking), actor2Tokens[3]);
+        collection.approve(address(staking), actor2Tokens[4]);
+        staking.stake(actor2Tokens);
+        vm.stopPrank();
+
+        // evaluate actor2 position
+        assertEq(collection.balanceOf(actor2), 0);
+        assertEq(staking.totalStaked(), stakeAmount * 2);
+        (uint256[] memory _actor2Tokens, uint256 _earnedActor2) = staking.userStakeInfo(actor2);
+        assertEq(_actor2Tokens, actor2Tokens);
+        assertEq(_earnedActor2, 0);
+        assertEq(staking.earned(actor2), 0);
+        assertEq(staking.rewardRate(), 30);
+        assertEq(staking.rewardPerToken(), 10 * 30 * 1e18 / stakeAmount);
+        assertEq(staking.userRewardPerTokenPaid(actor2), 10 * 30 * 1e18 / stakeAmount);
+        assertEq(staking.lastUpdateTime(), startAt + 10);
+
+        // evaluate actor1 position
+        assertEq(staking.earned(actor1), 300);
+
+        // forward to startAt + 20
+        vm.warp(startAt + 20);
+
+        // actor3 stakes
+        vm.startPrank(actor3);
+        collection.approve(address(staking), actor3Tokens[0]);
+        collection.approve(address(staking), actor3Tokens[1]);
+        collection.approve(address(staking), actor3Tokens[2]);
+        collection.approve(address(staking), actor3Tokens[3]);
+        collection.approve(address(staking), actor3Tokens[4]);
+        staking.stake(actor3Tokens);
+        vm.stopPrank();
+
+        // evaluate actor3 position
+        assertEq(collection.balanceOf(actor3), 0);
+        assertEq(staking.totalStaked(), stakeAmount * 3);
+        (uint256[] memory _actor3Tokens, uint256 _earnedActor3) = staking.userStakeInfo(actor3);
+        assertEq(_actor3Tokens, actor3Tokens);
+        assertEq(_earnedActor3, 0);
+        assertEq(staking.earned(actor3), 0);
+        assertEq(staking.rewardRate(), 30);
+        assertEq(staking.rewardPerToken(), (10 * 30 * 1e18 / 5) + (10 * 30 * 1e18 / 10));
+        assertEq(staking.userRewardPerTokenPaid(actor3), (10 * 30 * 1e18 / 5) + (10 * 30 * 1e18 / 10));
+        assertEq(staking.lastUpdateTime(), startAt + 20);
+
+        // evaluate actor1 position
+        assertEq(staking.earned(actor1), 450);
+
+        // evaluate actor2 position
+        assertEq(staking.earned(actor2), 150);
+
+        // forward to startAt + 30
+        vm.warp(startAt + 30);
+
+        // evaluate staking contract reward balance
+        assertEq(rewardToken.balanceOf(address(staking)), initialRewardAllocated);
+        assertEq(staking.toDistributeRewards(), initialRewardAllocated - 450 - 150);
+        assertEq(staking.owedRewards(), 450 + 150);
+
+        // actor1 claims rewards
+        vm.prank(actor1);
+        staking.exit();
+
+        // evaluate actor1 position
+        assertEq(collection.balanceOf(actor1), stakeAmount);
+        assertEq(rewardToken.balanceOf(actor1), 550);
+
+        // evaluate actor2 and actor3 position
+        assertEq(staking.earned(actor2), 250);
+        assertEq(staking.earned(actor3), 100);
+
+        // evaluate staking contract reward balance
+        assertEq(rewardToken.balanceOf(address(staking)), initialRewardAllocated - 550);
+        assertEq(staking.toDistributeRewards(), initialRewardAllocated - 550 - 250 - 100);
+        assertEq(staking.owedRewards(), 250 + 100);
+
+        // forward to startAt + 40
+        vm.warp(startAt + 40);
+
+        // actor2 claims rewards
+        vm.prank(actor2);
+        staking.exit();
+
+        // evaluate actor2 position
+        assertEq(collection.balanceOf(actor2), stakeAmount);
+        assertEq(rewardToken.balanceOf(actor2), 400);
+
+        // evaluate actor3 position
+        assertEq(staking.earned(actor3), 250);
+
+        // evaluate staking contract reward balance
+        assertEq(rewardToken.balanceOf(address(staking)), initialRewardAllocated - 550 - 400);
+        assertEq(staking.toDistributeRewards(), initialRewardAllocated - 550 - 400 - 250);
+        assertEq(staking.owedRewards(), 250);
+
+        // forward to startAt + 50
+        vm.warp(startAt + 50);
+
+        // actor3 claims rewards
+        vm.prank(actor3);
+        staking.exit();
+
+        // evaluate actor3 position
+        assertEq(collection.balanceOf(actor3), stakeAmount);
+        assertEq(rewardToken.balanceOf(actor3), 550);
+
+        // evaluate staking contract reward balance
+        assertEq(rewardToken.balanceOf(address(staking)), initialRewardAllocated - 550 - 400 - 550);
+        assertEq(staking.toDistributeRewards(), initialRewardAllocated - 550 - 400 - 550);
+        assertEq(staking.owedRewards(), 0);
+        assertEq(staking.totalStaked(), 0);
+
+        // no staking for 100 timestamps
+        vm.warp(startAt + 100);
+
+        // reintroduce rewards
+        uint256 previousRewardRate = staking.rewardRate();
+        console.log("LeftOver", staking.toDistributeRewards() - (endAt - block.timestamp) * previousRewardRate);
+        console.log("previousRewardRate", previousRewardRate);
+
+        vm.startPrank(owner);
+        staking.increaseRewardAllocation(0);
+        vm.stopPrank();
+        console.log("newRewardRate", staking.rewardRate());
+        assertGt(staking.rewardRate(), previousRewardRate);
+    }
 }
