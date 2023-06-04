@@ -628,4 +628,84 @@ contract ERC721StakingTest is Test {
         assertEq(staking.lastUpdateTime(), startAt + 20);
         assertEq(staking.userRewardPerTokenPaid(actor1), (10 * 30 * 1e18 / 5) + (10 * newRewardRate * 1e18 / 5));
     }
+
+    function test_Simulation7() public {
+        /// Simulation: owner initializes the staking contract and load rewards. At startAt actor1 stakes 5 NFTs. After 10 seconds the owner remove some rewards from the contract so that the rewardRate decreases. After 10 seconds the user claims his rewards. The owner recover the excess reward from the contract.
+
+        // initialize staking contract
+        vm.startPrank(owner);
+        staking.setStartAt(startAt);
+        staking.setEndAt(endAt);
+        rewardToken.transfer(address(staking), initialRewardAllocated);
+        staking.increaseRewardAllocation(initialRewardAllocated);
+        vm.stopPrank();
+
+        // actor1 stakes
+        vm.startPrank(actor1);
+        collection.approve(address(staking), actor1Tokens[0]);
+        collection.approve(address(staking), actor1Tokens[1]);
+        collection.approve(address(staking), actor1Tokens[2]);
+        collection.approve(address(staking), actor1Tokens[3]);
+        collection.approve(address(staking), actor1Tokens[4]);
+        staking.stake(actor1Tokens);
+        vm.stopPrank();
+
+        // evaluate
+        assertEq(collection.balanceOf(actor1), 0);
+        assertEq(staking.totalStaked(), stakeAmount);
+        (uint256[] memory _actor1Tokens, uint256 _earnedActor1) = staking.userStakeInfo(actor1);
+        assertEq(_actor1Tokens, actor1Tokens);
+        assertEq(_earnedActor1, 0);
+        assertEq(staking.earned(actor1), 0);
+        assertEq(staking.rewardRate(), 30);
+        assertEq(staking.rewardPerToken(), 0);
+        assertEq(staking.userRewardPerTokenPaid(actor1), 0);
+        assertEq(staking.lastUpdateTime(), startAt);
+
+        // forward to startAt + 10
+        vm.warp(startAt + 10);
+
+        // evaluate
+        assertEq(staking.earned(actor1), 300);
+        assertEq(staking.rewardRate(), 30);
+        assertEq(staking.toDistributeRewards(), initialRewardAllocated);
+        assertEq(staking.owedRewards(), 0);
+
+        // owner remove some supply
+        uint256 removedReward = 6000;
+        uint256 newRewardRate =
+            (initialRewardAllocated - removedReward - staking.earned(actor1)) / (endAt - block.timestamp);
+
+        vm.startPrank(owner);
+        staking.decreaseRewardAllocation(removedReward);
+        vm.stopPrank();
+
+        // evaluate
+        assertEq(staking.rewardRate(), newRewardRate);
+        assertEq(staking.toDistributeRewards(), initialRewardAllocated - removedReward - 300);
+        assertEq(staking.owedRewards(), 300);
+
+        // forward to startAt + 20
+        vm.warp(startAt + 20);
+
+        // actor1 claims rewards
+        vm.prank(actor1);
+        staking.exit();
+
+        // evaluate
+        assertEq(collection.balanceOf(actor1), stakeAmount);
+        assertEq(rewardToken.balanceOf(actor1), 300 + newRewardRate * 10);
+        assertEq(staking.rewardPerTokenStored(), (10 * 30 * 1e18 / 5) + (10 * newRewardRate * 1e18 / 5));
+        assertEq(staking.lastUpdateTime(), startAt + 20);
+        assertEq(staking.userRewardPerTokenPaid(actor1), (10 * 30 * 1e18 / 5) + (10 * newRewardRate * 1e18 / 5));
+
+        // owner recover excess reward
+        vm.startPrank(owner);
+        vm.expectRevert("Cannot remove more rewardToken than the excess amount present in the contract.");
+        staking.recoverERC20(address(rewardToken), removedReward + 1);
+        staking.recoverERC20(address(rewardToken), removedReward - 1);
+        staking.recoverERC20(address(rewardToken), 1);
+        vm.stopPrank();
+        assertEq(rewardToken.balanceOf(owner), initialRewardMinted - initialRewardAllocated + removedReward);
+    }
 }
