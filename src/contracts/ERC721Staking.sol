@@ -281,7 +281,7 @@ contract ERC721Staking is Ownable {
      * @notice Get the staking information for a user.
      * @dev Returns the staking information for a user.
      * @param account Address of the user.
-     * @return An array of staked token IDs and the total claimable rewards for a user.
+     * @return _tokensStaked and _claimableRewards, an array of staked token IDs and the total claimable rewards for a user.
      */
     function userStakeInfo(address account)
         public
