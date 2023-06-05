@@ -8,7 +8,7 @@ This repository contains two Ethereum smart contracts implemented using the Soli
 
 - **ERC721Staking.sol** allows user to stake non-fungible tokens (NFTs) conforming to ERC721 standards and earn rewards in the form of a ERC20 tokens.
 
-## 🔑 Key Features
+## 🔑 Key Features
 
 - **State Variables:** Both contain several state variables to keep track of various parameters like the NFT collection or ERC20 being staked (`nftCollection` / `stakingToken`), the token used as a reward (`rewardToken`), start and end of staking period, reward rate, and others. It also has a few mappings to track user-specific data like staked assets and rewards.
 
