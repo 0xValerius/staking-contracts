@@ -1,5 +1,15 @@
 // SPDX-License-Identifier: MIT
 
+/*
+      .oooo.               oooooo     oooo           oooo                      o8o                       
+     d8P'`Y8b               `888.     .8'            `888                      `"'                       
+    888    888 oooo    ooo   `888.   .8'    .oooo.    888   .ooooo.  oooo d8b oooo  oooo  oooo   .oooo.o 
+    888    888  `88b..8P'     `888. .8'    `P  )88b   888  d88' `88b `888""8P `888  `888  `888  d88(  "8 
+    888    888    Y888'        `888.8'      .oP"888   888  888ooo888  888      888   888   888  `"Y88b.  
+    `88b  d88'  .o8"'88b        `888'      d8(  888   888  888    .o  888      888   888   888  o.  )88b 
+     `Y8bd8P'  o88'   888o       `8'       `Y888""8o o888o `Y8bod8P' d888b    o888o  `V88V"V8P' 8""888P' 
+*/
+
 pragma solidity ^0.8.17;
 
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
@@ -89,10 +99,8 @@ contract ERC721Staking is Ownable {
         } else {
             IERC20(tokenAddress).transfer(msg.sender, tokenAmount);
         }
-        emit Recovered(tokenAddress, tokenAmount);
+        emit RecoveredERC20(tokenAddress, tokenAmount);
     }
-
-    // add a function recover wrongly sent NFT
 
     /* ========== MODIFIERS ========== */
     modifier updateReward(address account) {
@@ -191,10 +199,7 @@ contract ERC721Staking is Ownable {
     /* ========== EVENTS ========== */
     event ChangedEndAt(uint256);
     event UpdatedRewardAllocation(uint256 newToDistribute, uint256 newRewardRate);
-    // modify to RecoveredERC20
-    event Recovered(address token, uint256 amount);
-    // create event for RecoveredERC721
-    // withdrawn events to ERC721A
+    event RecoveredERC20(address token, uint256 amount);
     event Staked(address indexed user, uint256[] tokenIds);
     event Withdrawn(address indexed user, uint256[] tokenIds);
     event RewardPaid(address indexed user, uint256 reward);
